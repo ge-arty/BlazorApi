@@ -1,0 +1,37 @@
+﻿// Pages/Login.razor
+@page "/login"
+@inject LoginService LoginService
+@namespace BlazorApi.Models
+
+<h3>Login</h3>
+
+<form @onsubmit="HandleSubmit">
+    <label for="username">Username:</label>
+    <input id="username" type="text" @bind="loginModel.UserName" />
+
+    <label for="password">Password:</label>
+    <input id="password" type="password" @bind="loginModel.Password" />
+
+    <button type="submit">Login</button>
+</form>
+
+@code {
+    private LoginModel loginModel = new LoginModel();
+
+    private async Task HandleSubmit()
+    {
+        var token = await LoginService.GetToken(loginModel);
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            // Token obtained, you can use it as needed (e.g., store in local storage, set as authorization header)
+            Console.WriteLine($"Token: {token}");
+            // Redirect or perform actions upon successful login
+        }
+        else
+        {
+            // Handle failed login
+            Console.WriteLine("Login failed");
+        }
+    }
+}
