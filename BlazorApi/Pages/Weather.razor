@@ -1,11 +1,23 @@
-﻿@page "/weather"
+﻿<!-- Weather.razor -->
+@page "/weather"
 @inject HttpClient Http
+@using BlazorApi.Models
 
 <PageTitle>Weather</PageTitle>
 
 <h1>Weather</h1>
 
 <p>This component demonstrates fetching data from the server.</p>
+
+<input @bind="searchKeyword" placeholder="Enter search keyword" />
+<button @onclick="SearchForecasts">Search</button>
+
+<select @bind="selectedSortOrder">
+    <option value="Newest">Newest</option>
+    <option value="Oldest">Oldest</option>
+</select>
+
+<button @onclick="SortAndSearchForecasts">Sort and Search</button>
 
 @if (forecasts == null)
 {
@@ -23,7 +35,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var forecast in forecasts)
+            @foreach (var forecast in filteredAndSortedForecasts)
             {
                 <tr>
                     <td>@forecast.Date.ToShortDateString()</td>
@@ -37,21 +49,48 @@ else
 }
 
 @code {
-    private WeatherForecast[]? forecasts;
+    private WeatherForecastModel[]? forecasts;
+    private List<WeatherForecastModel>? filteredAndSortedForecasts;
+    private string selectedSortOrder = "Newest";
+    private string searchKeyword = "";
 
     protected override async Task OnInitializedAsync()
     {
-        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json");
+        forecasts = await Http.GetFromJsonAsync<WeatherForecastModel[]>("sample-data/weather.json");
+        SortAndSearchForecasts();
     }
 
-    public class WeatherForecast
+    private void SortAndSearchForecasts()
     {
-        public DateOnly Date { get; set; }
+        SortForecasts();
+        SearchForecasts();
+    }
 
-        public int TemperatureC { get; set; }
+    private void SortForecasts()
+    {
+        if (forecasts != null)
+        {
+            filteredAndSortedForecasts = selectedSortOrder switch
+            {
+                "Newest" => forecasts.OrderByDescending(f => f.Date).ToList(),
+                "Oldest" => forecasts.OrderBy(f => f.Date).ToList(),
+                _ => forecasts.ToList(),
+            };
+        }
+    }
 
-        public string? Summary { get; set; }
+    private void SearchForecasts()
+    {
+        if (string.IsNullOrWhiteSpace(searchKeyword))
+        {
+            return;
+        }
 
-        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+        if (filteredAndSortedForecasts != null)
+        {
+            filteredAndSortedForecasts = filteredAndSortedForecasts
+                .Where(f => f.Summary?.Contains(searchKeyword, StringComparison.OrdinalIgnoreCase) ?? false)
+                .ToList();
+        }
     }
 }
